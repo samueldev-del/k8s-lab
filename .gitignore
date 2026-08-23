@@ -1,0 +1,11 @@
+# Kubeconfig and credentials — never commit
+kubeconfig
+*.kubeconfig
+.kube/
+
+# macOS files
+.DS_Store
+
+# Editor backups
+*.swp
+*~

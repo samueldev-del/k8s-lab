@@ -12,11 +12,25 @@ spec:
       labels:
         app: web
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: web
       containers:
         - name: nginx
           image: nginx:alpine
           ports:
             - containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
           env:
             - name: POD_NAME
               valueFrom:

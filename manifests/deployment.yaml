@@ -19,11 +19,33 @@ spec:
           labelSelector:
             matchLabels:
               app: web
+      volumes:
+        - name: web-content
+          configMap:
+            name: web-config
+            items:
+              - key: index.html
+                path: index.html
       containers:
         - name: nginx
           image: nginx:alpine
           ports:
             - containerPort: 80
+          volumeMounts:
+            - name: web-content
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: web-config
+                  key: APP_ENV
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: web-secret
+                  key: DB_PASSWORD
           resources:
             requests:
               cpu: 50m
@@ -47,11 +69,3 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3
-          env:
-            - name: POD_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-          command: ["/bin/sh", "-c"]
-          args:
-            - echo "Served by $POD_NAME" > /usr/share/nginx/html/index.html && nginx -g "daemon off;"

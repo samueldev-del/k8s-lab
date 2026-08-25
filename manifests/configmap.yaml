@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-config
+data:
+  APP_ENV: "development"
+  APP_MESSAGE: "Configuration loaded from a ConfigMap"
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head><meta charset="utf-8"><title>k8s-lab</title></head>
+    <body>
+      <h1>Served from a ConfigMap-mounted file</h1>
+      <p>This page is not baked into the image.</p>
+    </body>
+    </html>

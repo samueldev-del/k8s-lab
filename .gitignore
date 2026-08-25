@@ -3,6 +3,9 @@ kubeconfig
 *.kubeconfig
 .kube/
 
+# Secret manifests contain plaintext values — never commit
+manifests/secret.yaml
+
 # macOS files
 .DS_Store
 

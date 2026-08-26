@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mywebapp
+description: A minimal chart deploying nginx with configurable page content
+type: application
+version: 0.1.0
+appVersion: "1.27"

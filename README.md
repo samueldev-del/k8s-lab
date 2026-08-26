@@ -1,7 +1,9 @@
-# k8s-lab — Kubernetes fundamentals on a local multi-node cluster
+# k8s-lab — Kubernetes fundamentals, from raw manifests to a Helm chart
 
-Learning project: a three-node Kubernetes cluster running locally with kind,
-used to practice core workload, scheduling and networking objects.
+Learning project built on a local three-node kind cluster. The repository shows
+the same application twice: first as plain Kubernetes manifests, then packaged
+as a Helm chart — which makes the duplication problem, and the reason Helm
+exists, visible side by side.
 
 ## Cluster
 
@@ -13,33 +15,61 @@ mappings, so the ingress controller lands there and is reachable from the host.
     kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
     kubectl wait --namespace ingress-nginx --for=condition=ready pod \
       --selector=app.kubernetes.io/component=controller --timeout=180s
-    kubectl apply -f manifests/
 
-Add this line to /etc/hosts:
+Add these lines to /etc/hosts:
 
     127.0.0.1 web.localdev.me
+    127.0.0.1 dev.localdev.me
 
-## Manifests
+## Part 1 — Raw manifests
 
-- kind-config.yaml — three-node cluster, ingress-ready label, host port mappings
-- manifests/deployment.yaml — web Deployment, 3 replicas, topology spread constraints, resource requests and limits
-- manifests/api.yaml — second Deployment and Service, 2 replicas
-- manifests/service.yaml — ClusterIP Service for the web app
-- manifests/service-nodeport.yaml — NodePort Service, exposed on host port 30080
-- manifests/ingress.yaml — path-based routing for both applications
+    kubectl apply -f manifests/
 
-## Routing
+- manifests/deployment.yaml — nginx Deployment, topology spread constraints, resource limits, readiness and liveness probes, config mounted from a ConfigMap
+- manifests/api.yaml — second Deployment and Service
+- manifests/service.yaml — ClusterIP Service
+- manifests/service-nodeport.yaml — NodePort Service on host port 30080
+- manifests/ingress.yaml — path-based routing between both applications
+- manifests/configmap.yaml — page content and environment variables
+- manifests/secret.yaml.example — template for the gitignored secret manifest
+- manifests/pvc.yaml, manifests/writer.yaml — dynamic volume provisioning
+- manifests/statefulset.yaml — StatefulSet with per-replica volumes and a headless Service
 
-    curl http://web.localdev.me:8080/       # web deployment
-    curl http://web.localdev.me:8080/api    # api deployment
-    curl http://localhost:30080             # web deployment through NodePort
+The label app: web appears in three files and the image tag in two. Deploying
+the same application with different replica counts would mean duplicating the
+whole directory.
 
-Each pod serves its own name through the Downward API, so repeated requests
-show traffic being distributed across replicas.
+## Part 2 — The same application as a Helm chart
+
+    helm install web ./chart
+    helm install dev ./chart -f chart/values-dev.yaml
+
+Two independent releases from one chart: different replica counts, different
+page content, different hostnames, no duplicated files.
+
+- chart/Chart.yaml — chart metadata
+- chart/values.yaml — default values
+- chart/values-dev.yaml — development overrides
+- chart/templates/ — templated Deployment, Service, Ingress and ConfigMap
+
+Notable details: selector labels are kept separate from full labels because a
+Deployment selector is immutable; a checksum annotation on the pod template
+triggers a rolling update whenever the ConfigMap content changes.
+
+## Useful commands
+
+    helm template web ./chart          # render locally, no cluster contact
+    helm install web ./chart --dry-run=server   # server-side validation
+    helm history web                   # revision history
+    helm rollback web 1                # roll back the whole release
+    kubectl rollout status deployment/web-mywebapp
 
 ## Concepts practiced
 
 Declarative manifests and continuous reconciliation, pods and scheduling,
-Deployments and ReplicaSets, labels and selectors, topology spread constraints,
-resource requests and limits, Services (ClusterIP and NodePort), cluster DNS,
-Ingress with path-based routing, rolling updates and rollback.
+Deployments, ReplicaSets and StatefulSets, labels and selectors, topology
+spread constraints, resource requests and limits, readiness and liveness
+probes, Services (ClusterIP, NodePort, headless), cluster DNS, Ingress with
+path-based routing, ConfigMaps and Secrets, persistent volumes and dynamic
+provisioning, rolling updates and rollback, Helm charts, templating, values
+overrides and release history.

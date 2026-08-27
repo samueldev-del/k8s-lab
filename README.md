@@ -73,3 +73,29 @@ probes, Services (ClusterIP, NodePort, headless), cluster DNS, Ingress with
 path-based routing, ConfigMaps and Secrets, persistent volumes and dynamic
 provisioning, rolling updates and rollback, Helm charts, templating, values
 overrides and release history.
+
+## Part 3 — Monitoring with Prometheus
+
+    helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm install prom prometheus-community/prometheus \
+      -f monitoring/prometheus-values.yaml \
+      --namespace monitoring --create-namespace
+    kubectl port-forward -n monitoring svc/prom-prometheus-server 9090:80
+
+Open http://localhost:9090.
+
+- monitoring/prometheus-values.yaml — trimmed chart values plus three alerting rules
+
+The values file disables Alertmanager, Pushgateway and persistence, which keeps
+the lab light. It defines alerts on scrape target availability, pods stuck
+outside the Running phase, and container memory usage above 200 MiB.
+
+Useful queries:
+
+    up                                                    # scrape health
+    sum by (namespace) (kube_pod_status_phase{phase="Running"})
+    sum by (pod) (rate(container_cpu_usage_seconds_total{container!=""}[5m]))
+    sum by (pod) (container_memory_working_set_bytes{container!=""}) / 1024 / 1024
+
+The container!="" filter matters: cAdvisor exposes one series per container plus
+a pod-level total, so omitting it double-counts usage.

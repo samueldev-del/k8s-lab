@@ -122,3 +122,27 @@ one definition covers every namespace in the cluster.
 The "Scrape targets down" panel uses count(up == 0) or vector(0): without the
 fallback the panel would render "No data" when nothing is down, which reads as a
 broken query rather than a healthy cluster.
+
+## Part 5 — GitOps with ArgoCD
+
+    kubectl create namespace argocd
+    kubectl apply -n argocd --server-side \
+      -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+    kubectl apply -f argocd/application-web.yaml
+    kubectl port-forward -n argocd svc/argocd-server 8080:443
+
+Open https://localhost:8080. The initial admin password:
+
+    kubectl -n argocd get secret argocd-initial-admin-secret \
+      -o jsonpath="{.data.password}" | base64 -d
+
+- argocd/application-web.yaml — ArgoCD Application pointing at chart/ in this repo
+
+The Application runs with automated sync, selfHeal and prune. Scaling the
+deployment by hand with kubectl is reverted within a couple of minutes, because
+the cluster is reconciled against the repository rather than against the last
+command someone ran. Deploying means pushing a commit — no kubectl apply, no
+helm upgrade.
+
+Note: --server-side is required for the install manifest. The applicationsets
+CRD exceeds the 256 KB annotation limit that client-side apply relies on.

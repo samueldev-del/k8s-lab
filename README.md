@@ -99,3 +99,26 @@ Useful queries:
 
 The container!="" filter matters: cAdvisor exposes one series per container plus
 a pod-level total, so omitting it double-counts usage.
+
+## Part 4 — Dashboards with Grafana
+
+    helm repo add grafana https://grafana.github.io/helm-charts
+    kubectl create configmap grafana-lab-dashboards \
+      --from-file=monitoring/dashboards/lab-overview.json -n monitoring
+    helm install grafana grafana/grafana \
+      -f monitoring/grafana-values.yaml --namespace monitoring
+    kubectl port-forward -n monitoring svc/grafana 3000:80
+
+Open http://localhost:3000 and log in with admin / admin.
+
+- monitoring/grafana-values.yaml — datasource and dashboard provider, both provisioned
+- monitoring/dashboards/lab-overview.json — dashboard definition
+
+Nothing is configured through the UI. The Prometheus datasource, the dashboard
+provider and the dashboard itself are all declared in files, so deleting the
+Grafana pod loses nothing. The dashboard uses a namespace template variable, so
+one definition covers every namespace in the cluster.
+
+The "Scrape targets down" panel uses count(up == 0) or vector(0): without the
+fallback the panel would render "No data" when nothing is down, which reads as a
+broken query rather than a healthy cluster.

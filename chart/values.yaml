@@ -1,4 +1,4 @@
-replicaCount: 3
+replicaCount: 4
 
 image:
   repository: nginx
@@ -14,7 +14,7 @@ ingress:
   className: nginx
   host: web.localdev.me
 
-pageMessage: "Deployed with Helm"
+pageMessage: "Deployed through GitOps"
 
 resources:
   requests:
